@@ -98,7 +98,7 @@ static void thermalMgr(void *pvParameters)
     {
       float* temp = (float*)(malloc(sizeof(float)));
       errCode = readTempLM75BD(devAddr,temp);
-      if(errCode = ERR_CODE_SUCCESS)
+      if(errCode == ERR_CODE_SUCCESS)
       {
         addTemperatureTelemetry(*temp);
       }
