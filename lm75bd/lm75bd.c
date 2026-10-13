@@ -29,16 +29,22 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
 
 error_code_t readTempLM75BD(uint8_t devAddr, float *temp) //LM75BD driver function
 {
-  uint8_t * buf = (uint8_t*)(malloc(2*sizeof(uint8_t))); //Allocating buffer to store raw temperature data
+  uint8_t buf[2]; //Allocating buffer to store raw temperature data
   uint8_t tempReg = LM75BD_REG_TEMP;
-  error_code_t errCode;
+  error_code_t errCode = ERR_CODE_SUCCESS;
 
+  errCode = i2cSendTo(devAddr, &tempReg, 1); //Selecting temperature register
+  if(errCode != ERR_CODE_SUCCESS)
+  {
+    return(errCode);
+  }
+  errCode = i2cReceiveFrom(devAddr, buf,2); //Reading from sensor
+  if(errCode != ERR_CODE_SUCCESS)
+  {
+    return(errCode);
+  }
 
-  RETURN_IF_ERROR_CODE(i2cSendTo(devAddr, &tempReg, 1)); //Selecting temperature register
-  //RETURN_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf,2)); //First reading (incorrect as per datasheet)
-  RETURN_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf,2)); //Second reading
-  uint16_t temp_buf_val = ((uint16_t)(buf[0]) << 8) ^ ((uint16_t)(buf[1])); //Using XOR to combine MSB and LSB
-  free(buf); //Free memory
+  uint16_t temp_buf_val = ((uint16_t)(buf[0]) << 8) | ((uint16_t)(buf[1])); //Using OR to combine MSB and LSB
   if(((temp_buf_val) >> 15) ^ ((uint16_t)(1))) //Checking sign bit
   {
     *temp = (temp_buf_val >> 5)*0.125; //Shifting by 5 bits to truncate padding then multiplying by 0.125 to get pos temp
@@ -46,8 +52,7 @@ error_code_t readTempLM75BD(uint8_t devAddr, float *temp) //LM75BD driver functi
   else
   {
     *temp = -(((uint16_t)(~(temp_buf_val)) >> 5)+1)*0.125; //Shifting by 5 bits to truncate padding then inverting bits 
-                                                          //and adding 1 byte and then multiplying by 0.125 to get neg temp
-                                                          
+                                                          //and adding 1 byte and then multiplying by 0.125 to get neg temp                                                       
   }
   return ERR_CODE_SUCCESS;
 }
