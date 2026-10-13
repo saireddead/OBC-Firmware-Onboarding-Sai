@@ -27,7 +27,7 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
   return ERR_CODE_SUCCESS;
 }
 
-error_code_t readTempLM75BD(uint8_t devAddr, float *temp) 
+error_code_t readTempLM75BD(uint8_t devAddr, float *temp) //LM75BD driver function
 {
   uint8_t * buf = (uint8_t*)(malloc(2*sizeof(uint8_t))); //Allocating buffer to store raw temperature data
   uint8_t tempReg = LM75BD_REG_TEMP;

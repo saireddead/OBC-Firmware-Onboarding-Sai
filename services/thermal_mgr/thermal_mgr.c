@@ -62,11 +62,11 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
   }
 }
 
-void osHandlerLM75BD(void) 
+void osHandlerLM75BD(void) //OS handler ISR
 {
-  thermal_mgr_event_t osReset;
-  osReset.type = THERMAL_MGR_EVENT_OS_RESET;
-  xQueueSendToFrontFromISR
+  thermal_mgr_event_t osReset; //Creates thermal manager event
+  osReset.type = THERMAL_MGR_EVENT_OS_RESET; //Defines type as OS reset
+  xQueueSendToFrontFromISR //Sends OS reset event to the front of the thermal manager queue
   (
     thermalMgrQueueHandle,
     &osReset,
@@ -74,47 +74,47 @@ void osHandlerLM75BD(void)
   );
 }
 
-static void thermalMgr(void *pvParameters) 
+static void thermalMgr(void *pvParameters) //Thermal manager task
 {
-  lm75bd_config_t thermal_config = *(lm75bd_config_t*)(pvParameters);
-  uint8_t devAddr = thermal_config.devAddr;
-  thermal_mgr_event_t *event = malloc(sizeof(thermal_mgr_event_t));
-  float osThreshold = thermal_config.overTempThresholdCelsius;
-  float hysThreshold = thermal_config.hysteresisThresholdCelsius;
-  error_code_t errCode;
+  lm75bd_config_t thermal_config = *(lm75bd_config_t*)(pvParameters); //Casting LM75BD config
+  uint8_t devAddr = thermal_config.devAddr; //Creating variable for dev address
+  thermal_mgr_event_t *event = malloc(sizeof(thermal_mgr_event_t)); //Creating event buffer to receive from queue
+  float osThreshold = thermal_config.overTempThresholdCelsius; //Creating variable for overtemperature threshold 
+  float hysThreshold = thermal_config.hysteresisThresholdCelsius; //Creating variable for hysteresis threshold
+  error_code_t errCode; //Defining errcode 
   while (1) 
   {
-    BaseType_t queueErrCode = 
+    BaseType_t queueErrCode = //Receiving thermal manager event from queue
     xQueueReceive
     (
       thermalMgrQueueHandle,
       event,
       portMAX_DELAY
     );
-    if(queueErrCode != pdPASS)
+    if(queueErrCode != pdPASS) //Checks if xQueueReceive timed out
     {
     }
-    else if(event->type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD)
+    else if(event->type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) //Checks if received event is for telemetry logging
     {
-      float* temp = (float*)(malloc(sizeof(float)));
-      errCode = readTempLM75BD(devAddr,temp);
-      if(errCode == ERR_CODE_SUCCESS)
+      float* temp = (float*)(malloc(sizeof(float))); //Creating pointer to store temp
+      errCode = readTempLM75BD(devAddr,temp); //Reading temperature from LM75BD
+      if(errCode == ERR_CODE_SUCCESS) //Checks if temperature was read successfully
       {
-        addTemperatureTelemetry(*temp);
+        addTemperatureTelemetry(*temp); //Logs temperature telemetry data in console
       }
     }
-    else if(event->type == THERMAL_MGR_EVENT_OS_RESET)
+    else if(event->type == THERMAL_MGR_EVENT_OS_RESET) //Checks if received event is for OS output reset
     {
-      float* temp = (float*)(malloc(sizeof(float)));
-      errCode = readTempLM75BD(devAddr,temp);
-      if(errCode != ERR_CODE_SUCCESS);
-      else if(*temp >= osThreshold)
+      float* temp = (float*)(malloc(sizeof(float))); //Creating pointer to store temp
+      errCode = readTempLM75BD(devAddr,temp); //Reading temperature from LM75BD and reset OS output
+      if(errCode != ERR_CODE_SUCCESS); //Checks if temperature was read successfully
+      else if(*temp >= osThreshold) //Checks if temperature exceeds overtemperature threshold
       {
-        overTemperatureDetected();
+        overTemperatureDetected(); //Logs overtemperature event in console
       }
-      else if(*temp <= hysThreshold)
+      else if(*temp <= hysThreshold) //Checks if temperature is below hysteresis threshold
       {
-        safeOperatingConditions();
+        safeOperatingConditions(); //Logs return to safe operating conditions event in console
       }
     }
   }
