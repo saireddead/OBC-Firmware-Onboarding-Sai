@@ -102,6 +102,7 @@ static void thermalMgr(void *pvParameters) //Thermal manager task
       {
         addTemperatureTelemetry(*temp); //Logs temperature telemetry data in console
       }
+      free(temp); //Free memory
     }
     else if(event->type == THERMAL_MGR_EVENT_OS_RESET) //Checks if received event is for OS output reset
     {
@@ -116,8 +117,10 @@ static void thermalMgr(void *pvParameters) //Thermal manager task
       {
         safeOperatingConditions(); //Logs return to safe operating conditions event in console
       }
+      free(temp); //Free memory
     }
   }
+  free(event); //Free memory
 }
 void addTemperatureTelemetry(float tempC) {
   printConsole("Temperature telemetry: %f deg C\n", tempC);
