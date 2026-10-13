@@ -29,19 +29,24 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
 
 error_code_t readTempLM75BD(uint8_t devAddr, float *temp) //LM75BD driver function
 {
-  uint8_t buf[2]; //Allocating buffer to store raw temperature data
+  uint8_t buf[2]={0}; //Allocating buffer to store raw temperature data
   uint8_t tempReg = LM75BD_REG_TEMP;
   error_code_t errCode = ERR_CODE_SUCCESS;
+  
+  if(temp == NULL) //Checks if pointer argument is null
+  {
+    return ERR_CODE_INVALID_ARG; //Return error code if true
+  }
 
   errCode = i2cSendTo(devAddr, &tempReg, 1); //Selecting temperature register
-  if(errCode != ERR_CODE_SUCCESS)
+  if(errCode != ERR_CODE_SUCCESS) //Checks if I2C write was successful
   {
-    return(errCode);
+    return(errCode); //Return error code if not
   }
   errCode = i2cReceiveFrom(devAddr, buf,2); //Reading from sensor
-  if(errCode != ERR_CODE_SUCCESS)
+  if(errCode != ERR_CODE_SUCCESS) //Checks if I2C read was successful
   {
-    return(errCode);
+    return(errCode); //Return error code if not
   }
 
   uint16_t temp_buf_val = ((uint16_t)(buf[0]) << 8) | ((uint16_t)(buf[1])); //Using OR to combine MSB and LSB
